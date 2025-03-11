@@ -1,0 +1,59 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java & Maven
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Extract Current Version
+        id: get_version
+        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Increase Patch Version
+        run: |
+          PATCH=$(echo $VERSION | awk -F. '{print $3+1}')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+          mvn versions:set -DnewVersion=$NEW_VERSION -DgenerateBackupPoms=false
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Compile Code
+        run: mvn clean compile
+
+      - name: Package Application
+        run: mvn package -DskipTests
+
+      - name: Archive Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-${{ env.NEW_VERSION }}
+          path: target/*.jar
+
+      - name: Build Docker Image
+        run: |
+          docker build --build-arg JAR_FILE=target/*.jar -t my-app:${{ env.NEW_VERSION }} .
+          docker tag my-app:${{ env.NEW_VERSION }} ${{ secrets.DOCKER_USERNAME }}/my-app:${{ env.NEW_VERSION }}
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/my-app:${{ env.NEW_VERSION }}
+
+      # - name: Deploy with Helm
+      #   run: |
+      #     helm upgrade --install my-app helm/ --set image.repository=${{ secrets.DOCKER_USERNAME }}/my-app,image.tag=${{ env.NEW_VERSION }}
