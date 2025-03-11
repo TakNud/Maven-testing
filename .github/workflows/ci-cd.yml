@@ -34,6 +34,9 @@ jobs:
       - name: Compile Code
         run: mvn -f myapp/pom.xml clean compile
 
+      - name: Run Tests
+        run: mvn -f myapp/pom.xml test
+
       - name: Package Application
         run: mvn -f myapp/pom.xml package -DskipTests
 
