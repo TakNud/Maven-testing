@@ -1,28 +1,36 @@
-# 🏗 Stage 1: Build the application
-FROM eclipse-temurin:17-jdk AS builder
+# First Stage: Build the application
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+
+# Set working directory
 WORKDIR /app
 
-# Copy Maven project files
-COPY pom.xml .
-COPY src ./src
+# Copy the Maven project files
+COPY myapp/pom.xml .
 
-# Package the application (creates target/myapp-1.0-SNAPSHOT.jar)
+# Download dependencies (layer caching)
+RUN mvn dependency:go-offline
+
+# Copy the source code
+COPY myapp/src ./src
+
+# Build the application
 RUN mvn clean package -DskipTests
 
-# 🏗 Stage 2: Create the runtime image
+# Second Stage: Create a minimal runtime environment
 FROM eclipse-temurin:17-jre
+
+# Set non-root user
+RUN addgroup --system myappgroup && adduser --system --group myappuser
+USER myappuser
+
+# Set working directory
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup --system myuser && adduser --system --ingroup myuser myuser
+# Copy the JAR file from the builder stage
+COPY --from=builder /app/target/*.jar app.jar
 
-# Copy JAR from builder stage
-COPY --from=builder /app/target/myapp-1.0-SNAPSHOT.jar app.jar
-
-# Set correct permissions
-RUN chown -R myuser:myuser /app
-
-USER myuser
+# Expose port 8080
 EXPOSE 8080
 
+# Run the application
 CMD ["java", "-jar", "app.jar"]
