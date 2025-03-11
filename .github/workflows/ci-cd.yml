@@ -20,16 +20,26 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Extract Current Version
-        id: get_version
-        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+      # - name: Extract Current Version
+      #   id: get_version
+      #   run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
-      - name: Increase Patch Version
-        run: |
-          PATCH=$(echo $VERSION | awk -F. '{print $3+1}')
-          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          mvn versions:set -DnewVersion=$NEW_VERSION -DgenerateBackupPoms=false
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+# Increase patch manually - Change to automate with plugin
+      # - name: Increase Patch Version
+      #   run: |
+      #     PATCH=$(echo $VERSION | awk -F. '{print $3+1}')
+      #     NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+      #     mvn versions:set -DnewVersion=$NEW_VERSION -DgenerateBackupPoms=false
+      #     echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      # - name: Increase Patch Version
+      #   run: |
+      #     CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+      #     PATCH=$(echo $CURRENT_VERSION | awk -F. '{print $3+1}')
+      #     NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2"."PATCH}')
+      #     mvn versions:set -DnewVersion=$NEW_VERSION -DgenerateBackupPoms=false
+      #     echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Compile Code
         run: mvn clean compile
