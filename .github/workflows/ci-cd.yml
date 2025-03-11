@@ -20,6 +20,13 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
+      - name: Compile Code
+        run: mvn -f myapp/pom.xml clean compile
+
+      - name: Run Tests
+        run: |
+          mvn -f myapp/pom.xml test && echo "✅ Tests succeeded!" || (echo "❌ Tests failed!" && exit 1)
+
       - name: Extract Current Version
         id: get_version
         run: echo "VERSION=$(mvn -f myapp/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
@@ -33,9 +40,6 @@ jobs:
 
       - name: Compile Code
         run: mvn -f myapp/pom.xml clean compile
-
-      - name: Run Tests
-        run: mvn -f myapp/pom.xml test
 
       - name: Package Application
         run: mvn -f myapp/pom.xml package -DskipTests
